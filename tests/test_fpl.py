@@ -65,6 +65,56 @@ def test_team_totals_sorted_desc(bootstrap):
     assert list(team_totals(bootstrap.players).items())[0] == ("ARS", 120)
 
 
+@pytest.fixture
+def cli(monkeypatch):
+    from fpl import cli as cli_module
+
+    monkeypatch.setattr(cli_module, "load_bootstrap", lambda _args: Bootstrap.from_api(FIXTURE))
+    return cli_module
+
+
+def test_cli_cache_flags_work_after_the_subcommand(cli):
+    args = cli.build_parser().parse_args(["players", "--refresh", "--cache-ttl", "0"])
+    assert args.refresh is True
+    assert args.cache_ttl == 0
+
+
+def test_cli_cache_flags_before_subcommand_are_not_overwritten(cli):
+    args = cli.build_parser().parse_args(["--refresh", "players"])
+    assert args.refresh is True
+
+
+def test_cli_rejects_non_positive_limit(cli):
+    with pytest.raises(SystemExit):
+        cli.build_parser().parse_args(["players", "--limit", "-5"])
+
+
+def test_cli_rejects_csv_and_json_together(cli):
+    with pytest.raises(SystemExit):
+        cli.build_parser().parse_args(["players", "--csv", "out.csv", "--json"])
+
+
+def test_cli_reports_unknown_team(cli, capsys):
+    assert cli.main(["players", "--team", "ZZZ"]) == 1
+    assert "unknown team" in capsys.readouterr().err
+
+
+def test_cli_csv_has_full_header_when_no_players_match(cli, tmp_path):
+    out = tmp_path / "empty.csv"
+    assert cli.main(["players", "--max-cost", "0.1", "--csv", str(out)]) == 0
+    header = out.read_text(encoding="utf-8").splitlines()[0].split(",")
+    assert header[:2] == ["id", "name"]
+    assert header[-2:] == ["value", "form_value"]
+
+
+def test_cli_ignores_broken_downstream_pipe(cli, monkeypatch):
+    def explode(*_args, **_kwargs):
+        raise BrokenPipeError
+
+    monkeypatch.setattr(cli, "print_table", explode)
+    assert cli.main(["players"]) == 0
+
+
 def test_client_uses_cache_until_ttl_expires(tmp_path, monkeypatch):
     client = FPLClient(cache_dir=tmp_path, ttl=60)
     calls = []

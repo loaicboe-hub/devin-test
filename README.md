@@ -21,6 +21,13 @@ python -m fpl.cli teams                                   # total points by club
 Sort keys: `points`, `form`, `value` (points/£m), `form_value`, `ppg`, `xgi`,
 `ict`, `cost`, `ownership`.
 
+`--refresh` and `--cache-ttl` work either before or after the subcommand:
+
+```bash
+python -m fpl.cli --refresh players --sort form
+python -m fpl.cli players --sort form --refresh
+```
+
 ## Library
 
 ```python

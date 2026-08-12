@@ -5,8 +5,9 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 import sys
-from dataclasses import asdict
+from dataclasses import asdict, fields
 from pathlib import Path
 
 from .analysis import SORT_KEYS, differentials, filter_players, rank, team_totals
@@ -39,9 +40,9 @@ def print_table(players: list[Player]) -> None:
 
 
 def write_csv(players: list[Player], path: Path) -> None:
-    fields = list(asdict(players[0]).keys()) + ["value", "form_value"] if players else []
+    columns = [f.name for f in fields(Player)] + ["value", "form_value"]
     with path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fields)
+        writer = csv.DictWriter(handle, fieldnames=columns)
         writer.writeheader()
         for player in players:
             writer.writerow(
@@ -56,6 +57,10 @@ def load_bootstrap(args: argparse.Namespace) -> Bootstrap:
 
 def cmd_players(args: argparse.Namespace) -> int:
     bootstrap = load_bootstrap(args)
+    if args.team:
+        known = {team.short_name.upper() for team in bootstrap.teams.values()}
+        if args.team.upper() not in known:
+            raise UsageError(f"unknown team {args.team!r}; expected one of {sorted(known)}")
     players = filter_players(
         bootstrap.players,
         position=args.position,
@@ -98,12 +103,36 @@ def cmd_status(args: argparse.Namespace) -> int:
     return 0
 
 
+class UsageError(Exception):
+    """Raised for invalid input that argparse cannot validate on its own."""
+
+
+def add_cache_flags(parser: argparse.ArgumentParser, subcommand: bool) -> None:
+    """Add the cache flags so they work before or after the subcommand.
+
+    Subcommand copies suppress their defaults so they don't overwrite a value
+    that was already given before the subcommand.
+    """
+    refresh_default = argparse.SUPPRESS if subcommand else False
+    ttl_default = argparse.SUPPRESS if subcommand else DEFAULT_TTL
+    parser.add_argument(
+        "--refresh", action="store_true", default=refresh_default, help="bypass the local cache"
+    )
+    parser.add_argument(
+        "--cache-ttl", type=float, default=ttl_default, help="cache lifetime in seconds"
+    )
+
+
+def positive_int(value: str) -> int:
+    number = int(value)
+    if number < 1:
+        raise argparse.ArgumentTypeError(f"expected a positive integer, got {value!r}")
+    return number
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="fpl", description=__doc__)
-    parser.add_argument("--refresh", action="store_true", help="bypass the local cache")
-    parser.add_argument(
-        "--cache-ttl", type=float, default=DEFAULT_TTL, help="cache lifetime in seconds"
-    )
+    add_cache_flags(parser, subcommand=False)
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     players = subparsers.add_parser("players", help="rank players")
@@ -113,14 +142,15 @@ def build_parser() -> argparse.ArgumentParser:
     players.add_argument("--min-minutes", type=int, default=0)
     players.add_argument("--available-only", action="store_true")
     players.add_argument("--sort", choices=sorted(SORT_KEYS), default="points")
-    players.add_argument("--limit", type=int, default=20)
-    players.add_argument("--csv", help="write results to a CSV file")
-    players.add_argument("--json", action="store_true")
+    players.add_argument("--limit", type=positive_int, default=20)
+    output = players.add_mutually_exclusive_group()
+    output.add_argument("--csv", help="write results to a CSV file")
+    output.add_argument("--json", action="store_true")
     players.set_defaults(func=cmd_players)
 
     diff = subparsers.add_parser("differentials", help="in-form, low-owned players")
     diff.add_argument("--max-ownership", type=float, default=10.0)
-    diff.add_argument("--limit", type=int, default=20)
+    diff.add_argument("--limit", type=positive_int, default=20)
     diff.set_defaults(func=cmd_differentials)
 
     teams = subparsers.add_parser("teams", help="total points by club")
@@ -128,6 +158,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     status = subparsers.add_parser("status", help="dataset and gameweek summary")
     status.set_defaults(func=cmd_status)
+
+    for subparser in (players, diff, teams, status):
+        add_cache_flags(subparser, subcommand=True)
     return parser
 
 
@@ -135,9 +168,14 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         return args.func(args)
-    except FPLError as exc:
+    except (FPLError, UsageError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
+    except BrokenPipeError:
+        # A closed downstream pipe (e.g. `| head`) is not an error; swallow the
+        # flush of the already-dead stream on interpreter shutdown.
+        sys.stdout = open(os.devnull, "w")  # noqa: SIM115
+        return 0
 
 
 if __name__ == "__main__":
