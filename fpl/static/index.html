@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FPL Analysis</title>
+    <link rel="stylesheet" href="/app.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="dot"></span>
+        <h1>FPL Analysis</h1>
+      </div>
+      <div class="topbar-actions">
+        <span id="gw-summary" class="muted">Loading…</span>
+        <button id="refresh" class="ghost" type="button" title="Bypass the cache and refetch">
+          Refresh data
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <section class="cards" id="cards" aria-label="Dataset summary"></section>
+
+      <nav class="tabs" role="tablist">
+        <button class="tab active" role="tab" data-view="players">Players</button>
+        <button class="tab" role="tab" data-view="differentials">Differentials</button>
+        <button class="tab" role="tab" data-view="teams">Clubs</button>
+      </nav>
+
+      <section class="panel" id="filters">
+        <div class="filter-grid" data-view-filters="players">
+          <label>
+            Position
+            <select id="position">
+              <option value="">All</option>
+            </select>
+          </label>
+          <label>
+            Club
+            <select id="team">
+              <option value="">All</option>
+            </select>
+          </label>
+          <label>
+            Sort by
+            <select id="sort"></select>
+          </label>
+          <label>
+            Max price <output id="max-cost-value">any</output>
+            <input id="max-cost" type="range" min="3.5" max="15.5" step="0.5" value="15.5" />
+          </label>
+          <label>
+            Min minutes
+            <input id="min-minutes" type="number" min="0" step="90" value="0" />
+          </label>
+          <label>
+            Show
+            <select id="limit">
+              <option value="25">Top 25</option>
+              <option value="50" selected>Top 50</option>
+              <option value="100">Top 100</option>
+              <option value="600">Everyone</option>
+            </select>
+          </label>
+          <label class="checkbox">
+            <input id="available-only" type="checkbox" />
+            Fit players only
+          </label>
+        </div>
+
+        <div class="filter-grid hidden" data-view-filters="differentials">
+          <label>
+            Max ownership <output id="max-ownership-value">5%</output>
+            <input id="max-ownership" type="range" min="0.5" max="30" step="0.5" value="5" />
+          </label>
+          <label>
+            Show
+            <select id="diff-limit">
+              <option value="10">Top 10</option>
+              <option value="20" selected>Top 20</option>
+              <option value="50">Top 50</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="filter-actions">
+          <span id="result-count" class="muted"></span>
+          <button id="export" class="ghost" type="button">Export CSV</button>
+        </div>
+      </section>
+
+      <section class="panel" id="results" aria-live="polite">
+        <div class="empty">Loading players…</div>
+      </section>
+    </main>
+
+    <footer class="muted">
+      Data from the official Fantasy Premier League API. Cached locally for 15 minutes.
+    </footer>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

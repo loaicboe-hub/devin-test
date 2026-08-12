@@ -7,7 +7,19 @@ The public FPL endpoints need no authentication. Responses are cached on disk
 (`~/.cache/fpl-analysis`, 15 minutes by default) so repeated analysis runs don't
 hammer the API; use `--refresh` to force a fresh fetch.
 
-## Usage
+## Dashboard
+
+```bash
+python -m fpl.web --open        # http://127.0.0.1:8000
+```
+
+A single-page UI over the same data: summary cards, a sortable player table with
+position/club/price/minutes filters, a differentials view and club points
+totals, plus CSV export. Served by the standard library — no build step and no
+JS dependencies. JSON endpoints: `/api/status`, `/api/players`,
+`/api/differentials`, `/api/teams`.
+
+## CLI
 
 ```bash
 python -m fpl.cli status                                  # dataset + gameweek summary
