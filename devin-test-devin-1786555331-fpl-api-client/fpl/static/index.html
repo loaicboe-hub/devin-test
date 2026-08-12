@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#080b12" />
+  <title>FPL Command Center</title>
+  <link rel="stylesheet" href="/app.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="FPL Command Center">
+        <span class="brand-mark">F</span>
+        <span>
+          <strong>FPL COMMAND</strong>
+          <small>Fantasy Premier League analytics</small>
+        </span>
+      </a>
+      <div class="topbar-actions">
+        <div class="live-pill"><span></span> LIVE DATA</div>
+        <button id="refresh" class="icon-button" type="button" title="Refresh data">↻ <span>Refresh</span></button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <p class="eyebrow">2026 / 27 SEASON</p>
+          <h1>Build smarter.<br><span>Score more.</span></h1>
+          <p class="hero-copy">Find the best FPL picks using points, form, value, ownership and availability — all in one command center.</p>
+        </div>
+        <div class="hero-status">
+          <div class="status-label">NEXT DEADLINE</div>
+          <div id="gw-summary" class="deadline">Loading…</div>
+        </div>
+      </section>
+
+      <section class="cards" id="cards" aria-label="Dataset summary"></section>
+
+      <section class="workspace">
+        <aside class="sidebar">
+          <div class="sidebar-heading">
+            <span>ANALYSIS</span>
+            <span class="live-dot"></span>
+          </div>
+          <nav class="tabs" role="tablist">
+            <button class="tab active" role="tab" data-view="players"><span>01</span> Player Lab</button>
+            <button class="tab" role="tab" data-view="differentials"><span>02</span> Differentials</button>
+            <button class="tab" role="tab" data-view="teams"><span>03</span> Club Power</button>
+          </nav>
+          <div class="sidebar-note">
+            <span class="note-icon">i</span>
+            <p>Data is cached locally for 15 minutes. Use refresh for the latest API snapshot.</p>
+          </div>
+        </aside>
+
+        <section class="content-column">
+          <section class="panel filters-panel" id="filters">
+            <div class="panel-title">
+              <div>
+                <p class="eyebrow">PLAYER LAB</p>
+                <h2>Find your next pick</h2>
+              </div>
+              <span id="result-count" class="result-count"></span>
+            </div>
+
+            <div class="filter-grid" data-view-filters="players">
+              <label>Position<select id="position"><option value="">All positions</option></select></label>
+              <label>Club<select id="team"><option value="">All clubs</option></select></label>
+              <label>Sort by<select id="sort"></select></label>
+              <label>Max price <output id="max-cost-value">Any</output><input id="max-cost" type="range" min="3.5" max="15.5" step="0.5" value="15.5" /></label>
+              <label>Min minutes<input id="min-minutes" type="number" min="0" step="90" value="0" /></label>
+              <label>Show<select id="limit"><option value="25">Top 25</option><option value="50" selected>Top 50</option><option value="100">Top 100</option><option value="600">Everyone</option></select></label>
+              <label class="checkbox"><input id="available-only" type="checkbox" /><span>Available players only</span></label>
+            </div>
+
+            <div class="filter-grid hidden" data-view-filters="differentials">
+              <label>Max ownership <output id="max-ownership-value">5%</output><input id="max-ownership" type="range" min="0.5" max="30" step="0.5" value="5" /></label>
+              <label>Show<select id="diff-limit"><option value="10">Top 10</option><option value="20" selected>Top 20</option><option value="50">Top 50</option></select></label>
+            </div>
+
+            <div class="filter-actions">
+              <span class="filter-hint">Click any table header to sort</span>
+              <button id="export" class="outline-button" type="button">↓ Export CSV</button>
+            </div>
+          </section>
+
+          <section class="panel results-panel" id="results" aria-live="polite">
+            <div class="empty">Loading players…</div>
+          </section>
+        </section>
+      </section>
+    </main>
+
+    <footer>FPL COMMAND CENTER <span>•</span> Data from the official Fantasy Premier League API</footer>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>
